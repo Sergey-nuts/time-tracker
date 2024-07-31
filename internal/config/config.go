@@ -11,8 +11,7 @@ import (
 var TimeOut time.Duration = time.Duration(time.Second * 10)
 
 type Config struct {
-	Env string `yaml:"env" env:"ENV" env-required:"true"`
-	//StoragePath string `yaml:"storage_path" env-required:"true"` // for SQLite only
+	Env        string     `yaml:"env" env:"ENV" env-required:"true"`
 	HTTPServer HTTPServer `yaml:"http_server"`
 	DB         DataBase   `yaml:"database"`
 }
