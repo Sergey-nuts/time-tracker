@@ -1,23 +1,21 @@
 package main
 
 import (
-	"fmt"
+	"context"
 	"log/slog"
-	"time-tracker/internal/config"
-	"time-tracker/internal/logger/sl"
+	"time-tracker/internal/pkg/app"
 )
 
 func main() {
-	cfg := config.MustLoad()
+	ctx := context.Background()
+	app := app.New(ctx)
 
-	fmt.Println(cfg.Env)
-
-	log := sl.SetupLogger(cfg.Env)
-
-	log.Info(
-		"time-tracker",
-		slog.String("env", cfg.Env),
-		slog.String("http_server", cfg.HTTPServer.Address),
+	app.Log().Info(
+		"starting time-tracker",
+		slog.String("env", app.Cfg().Env),
+		slog.String("version", "0.0.1"),
 	)
-	log.Debug("debug messages are enabled")
+	app.Log().Debug("debug messages are enabled")
+
+	app.Run(ctx)
 }
