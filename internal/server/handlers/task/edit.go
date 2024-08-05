@@ -41,7 +41,7 @@ func EditTaskHandler(ctx context.Context, log *slog.Logger, service service.Task
 
 		log.Info("request body decoded", slog.Any("task", task))
 
-		taskEdited, err := service.Edit(ctx, converter.ToTaskFromApi(task))
+		taskEdited, err := service.Edit(ctx, converter.TaskToService(task))
 		if err != nil {
 			log.Error("failed to add task", sl.Err(err))
 			http.Error(w, "failed to add task", http.StatusInternalServerError)

@@ -28,9 +28,14 @@ func New(log *slog.Logger) *InMemDB {
 func (db *InMemDB) Tasks(_ context.Context) ([]servicemodel.Task, error) {
 	const op = "repository.InMemory.Tasks"
 
+	log := db.log.With(
+		slog.String("op", op),
+	)
+	_ = log
+
 	t := make([]servicemodel.Task, len(db.tasks))
 	for _, v := range db.tasks {
-		t = append(t, converter.ToTaskFromRepo(v))
+		t = append(t, converter.TaskToService(v))
 	}
 
 	return t, nil
@@ -72,5 +77,5 @@ func (db *InMemDB) EditTask(ctx context.Context, task repomodel.Task) (servicemo
 
 	db.tasks[task.UUID] = task
 
-	return converter.ToTaskFromRepo(task), nil
+	return converter.TaskToService(task), nil
 }

@@ -42,7 +42,7 @@ func AddTaskHandler(ctx context.Context, log *slog.Logger, service service.TaskS
 
 		log.Info("request body decoded", slog.Any("task", task))
 
-		uuid, err := service.Add(ctx, converter.ToTaskFromApi(task))
+		uuid, err := service.Add(ctx, converter.TaskToService(task))
 		if err != nil {
 			log.Error("failed to add task", sl.Err(err))
 			http.Error(w, "failed to add task", http.StatusInternalServerError)

@@ -5,14 +5,15 @@ import (
 	"time-tracker/internal/service/servicemodel"
 )
 
-func ToTaskFromApi(in apimodel.Task) servicemodel.Task {
+// TaskToService converts task from api model to service model
+func TaskToService(task apimodel.Task) servicemodel.Task {
 	return servicemodel.Task{
-		UUID:         in.UUID,
-		Running:      in.Running,
-		Title:        in.Title,
-		Description:  in.Description,
-		CreationTime: in.CreationTime,
-		StartTime:    in.StartTime,
-		Duration:     in.Duration,
+		UUID:         task.UUID,
+		Running:      task.Running,
+		Title:        task.Title,
+		Description:  task.Description,
+		CreationTime: task.CreationTime,
+		StartTime:    task.StartTime,
+		Duration:     task.Duration,
 	}
 }

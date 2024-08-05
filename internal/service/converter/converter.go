@@ -6,8 +6,8 @@ import (
 	"time-tracker/internal/service/servicemodel"
 )
 
-// TaskToRepoFromService convert task from service model to repository model
-func TaskToRepoFromService(task servicemodel.Task) repomodel.Task {
+// TaskToRepo convert task from service model to repository model
+func TaskToRepo(task servicemodel.Task) repomodel.Task {
 	return repomodel.Task{
 		UUID:         task.UUID,
 		Running:      task.Running,
@@ -19,8 +19,8 @@ func TaskToRepoFromService(task servicemodel.Task) repomodel.Task {
 	}
 }
 
-// ToTaskFromService converts task from service model to api model
-func ToTaskFromService(task servicemodel.Task) apimodel.Task {
+// TaskToApi converts task from service model to api model
+func TaskToApi(task servicemodel.Task) apimodel.Task {
 	return apimodel.Task{
 		UUID:         task.UUID,
 		Running:      task.Running,

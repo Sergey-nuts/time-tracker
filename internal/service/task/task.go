@@ -12,7 +12,6 @@ import (
 	def "time-tracker/internal/service"
 	"time-tracker/internal/service/converter"
 	"time-tracker/internal/service/servicemodel"
-	model "time-tracker/internal/service/servicemodel"
 )
 
 var _ def.TaskService = (*service)(nil)
@@ -29,7 +28,7 @@ func NewService(taskRepo repository.Storage, log *slog.Logger) *service {
 	}
 }
 
-func (s *service) Tasks(ctx context.Context) ([]model.Task, error) {
+func (s *service) Tasks(ctx context.Context) ([]servicemodel.Task, error) {
 	const op = "service.task.Tasks"
 
 	log := s.log.With(
@@ -54,7 +53,7 @@ func (s *service) Tasks(ctx context.Context) ([]model.Task, error) {
 	return tasks, nil
 }
 
-func (s *service) Add(ctx context.Context, task model.Task) (string, error) {
+func (s *service) Add(ctx context.Context, task servicemodel.Task) (string, error) {
 	const op = "service.task.Add"
 
 	log := s.log.With(
@@ -69,7 +68,7 @@ func (s *service) Add(ctx context.Context, task model.Task) (string, error) {
 		task.CreationTime = time.Now()
 	}
 
-	uuid, err := s.taskRepository.AddTask(ctx, converter.TaskToRepoFromService(task))
+	uuid, err := s.taskRepository.AddTask(ctx, converter.TaskToRepo(task))
 	if err != nil {
 		log.Error("failed to add Task to repo", sl.Err(err))
 
@@ -96,12 +95,12 @@ func (s *service) Edit(ctx context.Context, task servicemodel.Task) (apimodel.Ta
 	ctx, cancel := context.WithTimeout(ctx, config.TimeOut)
 	defer cancel()
 
-	edited, err := s.taskRepository.EditTask(ctx, converter.TaskToRepoFromService(task))
+	edited, err := s.taskRepository.EditTask(ctx, converter.TaskToRepo(task))
 	if err != nil {
 		log.Error("failed to edit Task in repo", sl.Err(err))
 
 		return apimodel.Task{}, fmt.Errorf("%s: %w", op, err)
 	}
 
-	return converter.ToTaskFromService(edited), nil
+	return converter.TaskToApi(edited), nil
 }
