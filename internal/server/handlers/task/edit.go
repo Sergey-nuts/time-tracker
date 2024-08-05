@@ -15,12 +15,11 @@ import (
 	"github.com/go-chi/render"
 )
 
-// добавление Таски
-func AddTaskHandler(ctx context.Context, log *slog.Logger, service service.TaskService) http.HandlerFunc {
+func EditTaskHandler(ctx context.Context, log *slog.Logger, service service.TaskService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "handlers.task.AddTaskHandler"
+		const op = "handlers.task.EditTaskHandler"
 
-		log = log.With(
+		log := log.With(
 			slog.String("op", op),
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
@@ -42,7 +41,7 @@ func AddTaskHandler(ctx context.Context, log *slog.Logger, service service.TaskS
 
 		log.Info("request body decoded", slog.Any("task", task))
 
-		uuid, err := service.Add(ctx, converter.ToTaskFromApi(task))
+		taskEdited, err := service.Edit(ctx, converter.ToTaskFromApi(task))
 		if err != nil {
 			log.Error("failed to add task", sl.Err(err))
 			http.Error(w, "failed to add task", http.StatusInternalServerError)
@@ -50,10 +49,10 @@ func AddTaskHandler(ctx context.Context, log *slog.Logger, service service.TaskS
 			return
 		}
 
-		log.Info("add task complete", slog.Any("uuid", uuid))
+		log.Debug("add task complete", slog.Any("uuid", taskEdited))
 
 		data := map[string]interface{}{}
-		data["uuid"] = uuid
+		data["task"] = taskEdited
 
 		render.JSON(w, r, data)
 	}

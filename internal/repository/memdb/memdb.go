@@ -45,7 +45,7 @@ func (db *InMemDB) AddTask(_ context.Context, task repomodel.Task) (string, erro
 
 	if _, ok := db.tasks[task.UUID]; ok {
 		log.Error("task alredy in storage")
-		return "", fmt.Errorf("%s: %s", op, "task alredy in storage")
+		return "", fmt.Errorf("task alredy in storage")
 	}
 	if task.UUID == "" {
 		userUUID, _ := uuid.NewUUID()
@@ -55,4 +55,22 @@ func (db *InMemDB) AddTask(_ context.Context, task repomodel.Task) (string, erro
 	db.tasks[task.UUID] = task
 
 	return task.UUID, nil
+}
+
+func (db *InMemDB) EditTask(ctx context.Context, task repomodel.Task) (servicemodel.Task, error) {
+	const op = "repository.InMemory.EditTask"
+
+	log := db.log.With(
+		slog.String("op", op),
+	)
+
+	if _, ok := db.tasks[task.UUID]; !ok {
+		log.Error("no task in repository")
+
+		return servicemodel.Task{}, fmt.Errorf("no task uuid-%s in repository", task.UUID)
+	}
+
+	db.tasks[task.UUID] = task
+
+	return converter.ToTaskFromRepo(task), nil
 }

@@ -46,6 +46,7 @@ func (a *API) endpoints(ctx context.Context) {
 
 	a.r.Get("/tasks", task.TasksHandler(ctx, a.log, a.service))
 	a.r.Post("/task", task.AddTaskHandler(ctx, a.log, a.service))
+	a.r.Patch("/task", task.EditTaskHandler(ctx, a.log, a.service))
 }
 
 func (a *API) Router() *chi.Mux {

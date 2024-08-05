@@ -8,8 +8,10 @@ import (
 	"time-tracker/internal/config"
 	"time-tracker/internal/logger/sl"
 	"time-tracker/internal/repository"
+	"time-tracker/internal/server/apimodel"
 	def "time-tracker/internal/service"
 	"time-tracker/internal/service/converter"
+	"time-tracker/internal/service/servicemodel"
 	model "time-tracker/internal/service/servicemodel"
 )
 
@@ -78,8 +80,28 @@ func (s *service) Add(ctx context.Context, task model.Task) (string, error) {
 	return uuid, nil
 }
 
-func (s *service) Get(ctx context.Context, uuid string) (*model.Task, error) {
-	// TO DO
+// func (s *service) Get(ctx context.Context, uuid string) (*model.Task, error) {
+// 	// TO DO
 
-	return nil, nil
+// 	return nil, nil
+// }
+
+func (s *service) Edit(ctx context.Context, task servicemodel.Task) (apimodel.Task, error) {
+	const op = "service.task.Edit"
+
+	log := s.log.With(
+		slog.String("op", op),
+	)
+
+	ctx, cancel := context.WithTimeout(ctx, config.TimeOut)
+	defer cancel()
+
+	edited, err := s.taskRepository.EditTask(ctx, converter.TaskToRepoFromService(task))
+	if err != nil {
+		log.Error("failed to edit Task in repo", sl.Err(err))
+
+		return apimodel.Task{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return converter.ToTaskFromService(edited), nil
 }
