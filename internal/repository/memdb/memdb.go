@@ -33,7 +33,7 @@ func (db *InMemDB) Tasks(_ context.Context) ([]servicemodel.Task, error) {
 	)
 	_ = log
 
-	t := make([]servicemodel.Task, len(db.tasks))
+	t := make([]servicemodel.Task, 0, len(db.tasks))
 	for _, v := range db.tasks {
 		t = append(t, converter.TaskToService(v))
 	}
@@ -41,7 +41,7 @@ func (db *InMemDB) Tasks(_ context.Context) ([]servicemodel.Task, error) {
 	return t, nil
 }
 
-func (db *InMemDB) AddTask(_ context.Context, task repomodel.Task) (string, error) {
+func (db *InMemDB) AddTask(_ context.Context, task repomodel.Task) (servicemodel.Task, error) {
 	const op = "repository.InMemory.AddTask"
 
 	log := db.log.With(
@@ -50,16 +50,16 @@ func (db *InMemDB) AddTask(_ context.Context, task repomodel.Task) (string, erro
 
 	if _, ok := db.tasks[task.UUID]; ok {
 		log.Error("task alredy in storage")
-		return "", fmt.Errorf("task alredy in storage")
+		return servicemodel.Task{}, fmt.Errorf("task alredy in storage")
 	}
 	if task.UUID == "" {
-		userUUID, _ := uuid.NewUUID()
-		task.UUID = userUUID.String()
+		UUID, _ := uuid.NewUUID()
+		task.UUID = UUID.String()
 	}
 
 	db.tasks[task.UUID] = task
 
-	return task.UUID, nil
+	return converter.TaskToService(task), nil
 }
 
 func (db *InMemDB) EditTask(ctx context.Context, task repomodel.Task) (servicemodel.Task, error) {
@@ -72,10 +72,47 @@ func (db *InMemDB) EditTask(ctx context.Context, task repomodel.Task) (servicemo
 	if _, ok := db.tasks[task.UUID]; !ok {
 		log.Error("no task in repository")
 
-		return servicemodel.Task{}, fmt.Errorf("no task uuid-%s in repository", task.UUID)
+		return servicemodel.Task{}, repository.ErrorTaskNotFound
 	}
 
 	db.tasks[task.UUID] = task
 
 	return converter.TaskToService(task), nil
+}
+
+func (db *InMemDB) DeleteTask(ctx context.Context, task repomodel.Task) (servicemodel.Task, error) {
+	const op = "repository.InMemory.Delete"
+
+	log := db.log.With(
+		slog.String("op", op),
+	)
+
+	if _, ok := db.tasks[task.UUID]; !ok {
+		log.Error("no task in repository")
+
+		return servicemodel.Task{}, repository.ErrorTaskNotFound
+	}
+
+	deleted := db.tasks[task.UUID]
+	delete(db.tasks, task.UUID)
+
+	return converter.TaskToService(deleted), nil
+}
+
+func (db *InMemDB) Get(ctx context.Context, uuid string) (servicemodel.Task, error) {
+	const op = "repository.InMemory.Get"
+
+	log := db.log.With(
+		slog.String("op", op),
+	)
+
+	t, ok := db.tasks[uuid]
+	if !ok {
+		log.Error("no task in repository")
+
+		return servicemodel.Task{}, repository.ErrorTaskNotFound
+	}
+
+	return converter.TaskToService(t), nil
+
 }

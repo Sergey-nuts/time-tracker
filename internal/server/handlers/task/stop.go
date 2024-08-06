@@ -15,12 +15,11 @@ import (
 	"github.com/go-chi/render"
 )
 
-// добавление Таски
-func AddTaskHandler(ctx context.Context, log *slog.Logger, service service.TaskService) http.HandlerFunc {
+func TaskStopHandler(ctx context.Context, log *slog.Logger, service service.TaskService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "handlers.task.AddTaskHandler"
+		const op = "handlers.task.StartHandler"
 
-		log = log.With(
+		log := log.With(
 			slog.String("op", op),
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
@@ -40,20 +39,20 @@ func AddTaskHandler(ctx context.Context, log *slog.Logger, service service.TaskS
 			return
 		}
 
-		log.Info("request body decoded", slog.Any("task", task))
+		log.Debug("request body decoded", slog.Any("task", task))
 
-		task, err = service.Add(ctx, converter.TaskToService(task))
+		taskStopped, err := service.Stop(ctx, converter.TaskToService(task))
 		if err != nil {
-			log.Error("failed to add task", sl.Err(err))
-			http.Error(w, "failed to add task", http.StatusInternalServerError)
+			log.Error("failed to stop task", sl.Err(err))
+			http.Error(w, "failed to stop task", http.StatusInternalServerError)
 
 			return
 		}
 
-		log.Info("add task complete", slog.Any("task", task))
+		log.Debug("stop task complete", slog.Any("uuid", taskStopped.UUID))
 
 		data := map[string]interface{}{}
-		data["task"] = task
+		data["task"] = taskStopped
 
 		render.JSON(w, r, data)
 	}

@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -53,7 +54,7 @@ func (s *service) Tasks(ctx context.Context) ([]servicemodel.Task, error) {
 	return tasks, nil
 }
 
-func (s *service) Add(ctx context.Context, task servicemodel.Task) (string, error) {
+func (s *service) Add(ctx context.Context, task servicemodel.Task) (apimodel.Task, error) {
 	const op = "service.task.Add"
 
 	log := s.log.With(
@@ -67,16 +68,19 @@ func (s *service) Add(ctx context.Context, task servicemodel.Task) (string, erro
 	if task.CreationTime.IsZero() {
 		task.CreationTime = time.Now()
 	}
+	task.Running = false
+	task.Duration = time.Duration(0)
+	task.StartTime = time.Time{}
 
-	uuid, err := s.taskRepository.AddTask(ctx, converter.TaskToRepo(task))
+	task, err := s.taskRepository.AddTask(ctx, converter.TaskToRepo(task))
 	if err != nil {
 		log.Error("failed to add Task to repo", sl.Err(err))
 
-		return "", fmt.Errorf("%s: %w", op, err)
+		return apimodel.Task{}, fmt.Errorf("%s: %w", op, err)
 	}
 
-	log.Debug("add task succeeded")
-	return uuid, nil
+	log.Debug("add task succeeded", slog.Any("added task", task))
+	return converter.TaskToApi(task), nil
 }
 
 // func (s *service) Get(ctx context.Context, uuid string) (*model.Task, error) {
@@ -103,4 +107,111 @@ func (s *service) Edit(ctx context.Context, task servicemodel.Task) (apimodel.Ta
 	}
 
 	return converter.TaskToApi(edited), nil
+}
+
+func (s *service) Delete(ctx context.Context, task servicemodel.Task) (apimodel.Task, error) {
+	const op = "service.task.Delete"
+
+	log := s.log.With(
+		slog.String("op", op),
+	)
+
+	ctx, cancel := context.WithTimeout(ctx, config.TimeOut)
+	defer cancel()
+
+	deleted, err := s.taskRepository.DeleteTask(ctx, converter.TaskToRepo(task))
+	if err != nil {
+		log.Error("failed to delete Task in repo", sl.Err(err))
+
+		return apimodel.Task{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return converter.TaskToApi(deleted), nil
+}
+
+func (s *service) Start(ctx context.Context, task servicemodel.Task) (apimodel.Task, error) {
+	const op = "service.task.Start"
+
+	log := s.log.With(
+		slog.String("op", op),
+	)
+
+	ctx, cancel := context.WithTimeout(ctx, config.TimeOut)
+	defer cancel()
+
+	t, err := s.taskRepository.Get(ctx, task.UUID)
+	if errors.Is(err, repository.ErrorTaskNotFound) {
+		log.Error("faild to start Task", sl.Err(err))
+
+		return apimodel.Task{}, err
+	}
+
+	if err != nil {
+		log.Error("failed to start Task", sl.Err(err))
+
+		return apimodel.Task{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	if t.Running {
+		log.Error("failed to start Task", sl.Err(def.ErrorTaskRunning))
+
+		return apimodel.Task{}, def.ErrorTaskRunning
+	}
+
+	t.Running = true
+	t.StartTime = time.Now()
+
+	t, err = s.taskRepository.EditTask(ctx, converter.TaskToRepo(t))
+	if err != nil {
+		log.Error("failed to start Task in repo", sl.Err(err))
+
+		return apimodel.Task{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return converter.TaskToApi(t), nil
+}
+
+func (s *service) Stop(ctx context.Context, task servicemodel.Task) (apimodel.Task, error) {
+	const op = "service.task.Stop"
+
+	log := s.log.With(
+		slog.String("op", op),
+	)
+
+	ctx, cancel := context.WithTimeout(ctx, config.TimeOut)
+	defer cancel()
+
+	t, err := s.taskRepository.Get(ctx, task.UUID)
+	if errors.Is(err, repository.ErrorTaskNotFound) {
+		log.Error("faild to stop Task", sl.Err(err))
+
+		return apimodel.Task{}, err
+	}
+
+	if err != nil {
+		log.Error("failed to stop Task", sl.Err(err))
+
+		return apimodel.Task{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	if !t.Running {
+		log.Error("failed to stop Task", sl.Err(def.ErrorTaskNotRunning))
+
+		return apimodel.Task{}, def.ErrorTaskNotRunning
+	}
+
+	// TO DO: implement stopping logic
+	t.Running = false
+
+	t.Duration = t.Duration + time.Since(t.StartTime)
+	t.StartTime = time.Time{}
+
+	t, err = s.taskRepository.EditTask(ctx, converter.TaskToRepo(t))
+	if err != nil {
+		log.Error("failed to stop Task in repo", sl.Err(err))
+
+		return apimodel.Task{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return converter.TaskToApi(t), nil
 }
