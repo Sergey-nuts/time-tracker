@@ -29,7 +29,7 @@ func NewService(taskRepo repository.Storage, log *slog.Logger) *service {
 	}
 }
 
-func (s *service) Tasks(ctx context.Context) ([]servicemodel.Task, error) {
+func (s *service) Tasks(ctx context.Context, pageid int) ([]servicemodel.Task, error) {
 	const op = "service.task.Tasks"
 
 	log := s.log.With(
@@ -40,9 +40,9 @@ func (s *service) Tasks(ctx context.Context) ([]servicemodel.Task, error) {
 	ctx, cancel := context.WithTimeout(ctx, config.TimeOut)
 	defer cancel()
 
-	log.Debug("Tasks", slog.Any("get tasks", "to repository"))
+	log.Debug("Tasks", slog.Any("get tasks", "from repository"))
 
-	tasks, err := s.taskRepository.Tasks(ctx)
+	tasks, err := s.taskRepository.Tasks(ctx, pageid)
 	if err != nil {
 		log.Error("failed to get Tasks", sl.Err(err))
 
@@ -83,11 +83,27 @@ func (s *service) Add(ctx context.Context, task servicemodel.Task) (apimodel.Tas
 	return converter.TaskToApi(task), nil
 }
 
-// func (s *service) Get(ctx context.Context, uuid string) (*model.Task, error) {
-// 	// TO DO
+func (s *service) Get(ctx context.Context, uuid string) (apimodel.Task, error) {
+	const op = "service.task.Get"
 
-// 	return nil, nil
-// }
+	log := s.log.With(
+		slog.String("op", op),
+	)
+
+	// TO DO
+
+	ctx, cancel := context.WithTimeout(ctx, config.TimeOut)
+	defer cancel()
+
+	task, err := s.taskRepository.Get(ctx, uuid)
+	if err != nil {
+		log.Error("failed to get Task in repo", sl.Err(err))
+
+		return apimodel.Task{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return converter.TaskToApi(task), nil
+}
 
 func (s *service) Edit(ctx context.Context, task servicemodel.Task) (apimodel.Task, error) {
 	const op = "service.task.Edit"

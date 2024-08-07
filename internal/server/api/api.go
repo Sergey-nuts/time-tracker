@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time-tracker/internal/server/handlers/task"
 	"time-tracker/internal/server/middleware/mwlogger"
+	"time-tracker/internal/server/middleware/mwpagination"
 	"time-tracker/internal/service"
 
 	"github.com/go-chi/chi/v5"
@@ -44,12 +45,15 @@ func (a *API) endpoints(ctx context.Context) {
 		w.Write([]byte("pong"))
 	})
 
-	a.r.Get("/tasks", task.TasksHandler(ctx, a.log, a.service))
-	a.r.Post("/task", task.AddTaskHandler(ctx, a.log, a.service))
-	a.r.Put("/task", task.EditTaskHandler(ctx, a.log, a.service))
-	a.r.Delete("/task", task.TaskDeleteHandler(ctx, a.log, a.service))
-	a.r.Get("/task/start", task.TaskStartHandler(ctx, a.log, a.service))
-	a.r.Get("/task/stop", task.TaskStopHandler(ctx, a.log, a.service))
+	a.r.Route("/tasks", func(r chi.Router) {
+		r.With(mwpagination.Paginate).Get("/", task.TasksHandler(ctx, a.log, a.service))
+		r.Post("/", task.AddTaskHandler(ctx, a.log, a.service))
+		r.Put("/", task.EditTaskHandler(ctx, a.log, a.service))
+		r.Delete("/", task.TaskDeleteHandler(ctx, a.log, a.service))
+
+		r.Get("/start", task.TaskStartHandler(ctx, a.log, a.service))
+		r.Get("/stop", task.TaskStopHandler(ctx, a.log, a.service))
+	})
 }
 
 func (a *API) Router() *chi.Mux {

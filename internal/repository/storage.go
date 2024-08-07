@@ -12,10 +12,9 @@ var (
 )
 
 type Storage interface {
-	Tasks(ctx context.Context) ([]servicemodel.Task, error)
+	Tasks(ctx context.Context, pageid int) ([]servicemodel.Task, error)
 	AddTask(ctx context.Context, task repomodel.Task) (servicemodel.Task, error)
 	EditTask(ctx context.Context, task repomodel.Task) (servicemodel.Task, error)
 	DeleteTask(ctx context.Context, task repomodel.Task) (servicemodel.Task, error)
 	Get(ctx context.Context, uuid string) (servicemodel.Task, error)
-	// StopTask(ctx context.Context, Task) error
 }

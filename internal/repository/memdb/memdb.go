@@ -25,7 +25,7 @@ func New(log *slog.Logger) *InMemDB {
 	return &InMemDB{tasks: t, log: log}
 }
 
-func (db *InMemDB) Tasks(_ context.Context) ([]servicemodel.Task, error) {
+func (db *InMemDB) Tasks(_ context.Context, _ int) ([]servicemodel.Task, error) {
 	const op = "repository.InMemory.Tasks"
 
 	log := db.log.With(
